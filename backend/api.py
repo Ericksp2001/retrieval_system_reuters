@@ -5,7 +5,7 @@ import os
 import re
 from nltk import SnowballStemmer
 import string
-
+from sklearn.metrics import jaccard_score
 
 app = Flask(__name__)
 
@@ -44,6 +44,13 @@ def clean_text(*, text, stopwords):
     stemmed_tokens = [stemmer.stem(token) for token in no_stw]
     text_cleaned = " ".join(stemmed_tokens)
     return text_cleaned
+
+def calculate_jaccard_similarity(new_doc_bin, docs_bin):
+    similarities = []
+    for doc_bin in docs_bin:
+        similarity = jaccard_score(new_doc_bin.toarray()[0], doc_bin.toarray()[0])
+        similarities.append(similarity)
+    return similarities
 
 @app.route('/process', methods=['POST'])
 def process_query():
