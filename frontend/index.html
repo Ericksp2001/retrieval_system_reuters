@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InfoFinder</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="./img/logo1.png" alt="Logo de Mi Buscador">
+        </div>
+        <form id="search-form" class="search-bar">
+            <input type="text" id="query-input" placeholder="Ingresa tu búsqueda aquí" name="q">
+            <button type="submit" id="search-button" disabled><img src="./img/search.png" alt="Buscar"></button>
+        </form>
+        <div class="search-options">
+            <label class="toggle">
+                <input type="radio" name="search-method" value="tfidf-cosine">
+                <span class="slider">TF-IDF Coseno</span>
+            </label>
+            <label class="toggle">
+                <input type="radio" name="search-method" value="bow-jaccard">
+                <span class="slider">BoW Jaccard</span>
+            </label>
+        </div>
+        <span id="error-message" class="error-message"></span>
+        <!-- Contenedor de resultados -->
+        <div id="resultados-container" class="resultados-container"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
