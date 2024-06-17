@@ -96,15 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
             titleElement.textContent = 'Documentos:';
             resultadosDiv.appendChild(titleElement);
             
-            const documentosElement = document.createElement('ul');
-            resultados.forEach(item => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `Documento ${item}`;
-                documentosElement.appendChild(listItem);
-            });
+            const documentosElement = document.createElement('p');
+            documentosElement.textContent = resultados.map(item => `Documento ${item}`).join(', ');
     
             resultadosDiv.appendChild(documentosElement);
             resultadosContainer.appendChild(resultadosDiv);
         }
-    }       
+    }    
 });

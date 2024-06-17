@@ -26,12 +26,16 @@ matrix_path_tfidf = os.path.join(os.path.dirname(__file__), '../API_resources/tf
 # Stopwords
 stpw_path = os.path.join(os.path.dirname(__file__), '../reuters/stopwords.txt')
 
+# doc names
+doc_names_path = os.path.join(os.path.dirname(__file__), '../API_resources/document_names.joblib')
+
 
 if os.path.exists(vectorizer_path_bow) and os.path.exists(matrix_path_bow) and os.path.exists(vectorizer_path_tfidf) and os.path.exists(matrix_path_tfidf):
     vectorizer_bow = joblib.load(vectorizer_path_bow)
     bow_loaded = joblib.load(matrix_path_bow)
     vectorizer_tfidf = joblib.load(vectorizer_path_tfidf)
     tfidf_loaded = joblib.load(matrix_path_tfidf)
+    document_names = joblib.load(doc_names_path)
 else:
     raise FileNotFoundError("Vectorizer or matrix file not found in API_resources/bow or API_resources/tfidf")
 
@@ -79,8 +83,16 @@ def process_query_tfidf():
     cosine_similarities = cosine_similarity(query_vector, tfidf_loaded).flatten()
     
     umbral = 0
-    # Filtrar valores diferentes de 0
-    non_zero_similarities = [(index, similarity) for index, similarity in enumerate(cosine_similarities) if similarity > umbral]
+
+    non_zero_similarities = []
+
+    for index, similarity in enumerate(cosine_similarities):
+        if similarity > umbral:
+            doc_name = document_names[index]
+            non_zero_similarities.append((doc_name, float(similarity)))
+
+    # Ordenar por similitud de mayor a menor
+    non_zero_similarities.sort(key=lambda x: x[1], reverse=True)
 
     response = {
         'query': query,
@@ -93,7 +105,6 @@ def process_query_tfidf():
 @app.route('/process/bow/', methods=['POST'])
 def process_query_bow():
     data = request.get_json()
-
     query = data['query']
 
     preprocessed_query = clean_text(text=query, stopwords=stop_words)
@@ -102,8 +113,14 @@ def process_query_bow():
     jaccard_similarities = jaccard_similarity(query_vector, corpus_list).flatten()
     
     umbral = 0
-    # Filtrar valores diferentes de 0
-    non_zero_similarities = [(index, similarity) for index, similarity in enumerate(jaccard_similarities) if similarity > umbral]
+    non_zero_similarities = []
+    for index, similarity in enumerate(jaccard_similarities):
+        if similarity > umbral:
+            doc_name = document_names[index]  # Asumiendo que document_names está cargado
+            non_zero_similarities.append((doc_name, float(similarity)))  # Convertimos a float para serialización JSON
+
+    # Ordenar por similitud de mayor a menor
+    non_zero_similarities.sort(key=lambda x: x[1], reverse=True)
 
     response = {
         'query': query,
