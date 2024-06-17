@@ -1,0 +1,6 @@
+env
+bow_counts.joblib
+onehot.joblib
+vectorizer_bow.joblib
+tfidf_counts.joblib
+vectorizer_tfidf.joblib
