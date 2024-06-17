@@ -20,11 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedOption = document.querySelector('input[name="search-method"]:checked');
         
         if (!selectedOption) {
+            errorMessage.textContent = 'Seleccione un método de búsqueda';
             errorMessage.style.display = 'block';
             return;
         }
 
-        const query = queryInput.value; 
+        const query = queryInput.value.trim(); 
 
         if (!query) {
             errorMessage.textContent = 'Por favor ingrese una consulta en la barra de búsqueda';
@@ -34,25 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         errorMessage.style.display = 'none';
 
-        enviarSolicitudAPI(query);
+        enviarSolicitudAPI(query, selectedOption.value);
     });
 
-    function enviarSolicitudAPI(query) {
-        const apiUrl = 'http://127.0.0.1:5000/process';
-        const selectedOption = document.querySelector('input[name="search-method"]:checked');
-        let tv, tr;
+    function enviarSolicitudAPI(query, selectedOption) {
+        const apiUrl = selectedOption === 'tfidf-cosine' ? 'http://127.0.0.1:5000/process/tfidf/' : 'http://127.0.0.1:5000/process/bow/';
     
-        if (selectedOption) {
-            if (selectedOption.value === 'tfidf-cosine') {
-                tv = 0;
-                tr = 1;
-            } else if (selectedOption.value === 'bow-jaccard') {
-                tv = 1;
-                tr = 0;
-            }
-        }
-    
-        const datos = { query: query, tv: tv, tr: tr };
+        const datos = { query: query };
     
         const opciones = {
             method: 'POST',
@@ -71,7 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 console.log(data);
-                mostrarResultados(data.result.trim());
+                if (selectedOption === 'tfidf-cosine') {
+                    mostrarResultados(data.cosine_similarities.map(subarray => subarray[0]));
+                } else if (selectedOption === 'bow-jaccard') {
+                    mostrarResultados(data.jaccard_similarities.map(subarray => subarray[0]));
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -90,10 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function mostrarResultados(resultados) {
         resultadosContainer.innerHTML = ''; // Limpiar resultados anteriores
     
-        // Extraer los nombres de archivos de la cadena
-        const archivos = resultados.replace(/[\[\]']/g, '').split(', ');
-    
-        if (archivos.length === 0 || (archivos.length === 1 && archivos[0] === '')) {
+        if (resultados.length === 0) {
             const noResultsMessage = document.createElement('div');
             noResultsMessage.textContent = 'No se encontraron resultados.';
             noResultsMessage.classList.add('no-results-message');
@@ -106,11 +96,15 @@ document.addEventListener('DOMContentLoaded', () => {
             titleElement.textContent = 'Documentos:';
             resultadosDiv.appendChild(titleElement);
             
-            const documentosElement = document.createElement('p');
-            documentosElement.textContent = archivos.join(', ');
-            resultadosDiv.appendChild(documentosElement);
+            const documentosElement = document.createElement('ul');
+            resultados.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `Documento ${item}`;
+                documentosElement.appendChild(listItem);
+            });
     
+            resultadosDiv.appendChild(documentosElement);
             resultadosContainer.appendChild(resultadosDiv);
         }
-    }
+    }       
 });

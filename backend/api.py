@@ -7,9 +7,11 @@ from nltk import SnowballStemmer
 import string
 import numpy as np
 from scipy.sparse import csr_matrix
+from flask_cors import CORS
+
 
 app = Flask(__name__)
-
+CORS(app)
 ## Carga de estructuras de datos
 
 # Carga de lo necesario para BoW
