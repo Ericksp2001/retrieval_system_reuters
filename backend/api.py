@@ -5,7 +5,8 @@ import os
 import re
 from nltk import SnowballStemmer
 import string
-from sklearn.metrics import jaccard_score
+import numpy as np
+from scipy.sparse import csr_matrix
 
 app = Flask(__name__)
 
@@ -27,7 +28,6 @@ stpw_path = os.path.join(os.path.dirname(__file__), '../reuters/stopwords.txt')
 if os.path.exists(vectorizer_path_bow) and os.path.exists(matrix_path_bow) and os.path.exists(vectorizer_path_tfidf) and os.path.exists(matrix_path_tfidf):
     vectorizer_bow = joblib.load(vectorizer_path_bow)
     bow_loaded = joblib.load(matrix_path_bow)
-    onehot_loaded = joblib.load(onehot_path)
     vectorizer_tfidf = joblib.load(vectorizer_path_tfidf)
     tfidf_loaded = joblib.load(matrix_path_tfidf)
 else:
@@ -35,6 +35,9 @@ else:
 
 with open(stpw_path, 'r', encoding='utf-8') as file:
     stop_words = set(word.strip() for word in file.readlines())
+
+# Ejemplo para convertir un ndarray en una lista de csr_matrix
+corpus_list = [csr_matrix(doc) for doc in bow_loaded]
 
 def clean_text(*, text, stopwords):
     text = re.sub(r'\d+', '', text)
@@ -45,36 +48,64 @@ def clean_text(*, text, stopwords):
     text_cleaned = " ".join(stemmed_tokens)
     return text_cleaned
 
-def calculate_jaccard_similarity(new_doc_bin, docs_bin):
-    similarities = []
-    for doc_bin in docs_bin:
-        similarity = jaccard_score(new_doc_bin.toarray()[0], doc_bin.toarray()[0])
-        similarities.append(similarity)
-    return similarities
+def jaccard_similarity(query_vector, corpus_matrix):
+    # Convertir la consulta a un conjunto de índices de términos presentes
+    query_set = set(query_vector.indices)
 
-@app.route('/process', methods=['POST'])
-def process_query():
+    # Convertir el corpus a un conjunto de conjuntos de índices de términos presentes
+    corpus_sets = [set(doc.indices) for doc in corpus_matrix]
+
+    jaccard_similarities = []
+
+    for doc_set in corpus_sets:
+        intersection = len(query_set & doc_set)
+        union = len(query_set | doc_set)
+        similarity = intersection / union if union != 0 else 0
+        jaccard_similarities.append(similarity)
+
+    return np.array(jaccard_similarities)
+
+@app.route('/process/tfidf/', methods=['POST'])
+def process_query_tfidf():
     data = request.get_json()
-    if 'query' not in data or 'tv' not in data or 'tr' not in data:
-        return jsonify({'error': 'Request must contain query, tv, and tr'}), 400
-    
+
     query = data['query']
-    tv = data['tv']
-    tr = data['tr']
-    
+
     preprocessed_query = clean_text(text=query, stopwords=stop_words)
     query_vector = vectorizer_tfidf.transform([preprocessed_query])
     
-    cosine_similarities = cosine_similarity(query_vector, tfidf_loaded).flatten()  # Aplanar la matriz
+    cosine_similarities = cosine_similarity(query_vector, tfidf_loaded).flatten()
     
+    umbral = 0
     # Filtrar valores diferentes de 0
-    non_zero_similarities = [index for index, similarity in enumerate(cosine_similarities) if similarity > 0]
+    non_zero_similarities = [(index, similarity) for index, similarity in enumerate(cosine_similarities) if similarity > umbral]
 
     response = {
         'query': query,
-        'tv': tv,
-        'tr': tr,
         'cosine_similarities': non_zero_similarities
+    }
+    
+    return jsonify(response)
+
+
+@app.route('/process/bow/', methods=['POST'])
+def process_query_bow():
+    data = request.get_json()
+
+    query = data['query']
+
+    preprocessed_query = clean_text(text=query, stopwords=stop_words)
+    query_vector = vectorizer_bow.transform([preprocessed_query])
+    
+    jaccard_similarities = jaccard_similarity(query_vector, corpus_list).flatten()
+    
+    umbral = 0
+    # Filtrar valores diferentes de 0
+    non_zero_similarities = [(index, similarity) for index, similarity in enumerate(jaccard_similarities) if similarity > umbral]
+
+    response = {
+        'query': query,
+        'jaccard_similarities': non_zero_similarities
     }
     
     return jsonify(response)
