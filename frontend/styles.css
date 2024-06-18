@@ -121,7 +121,8 @@ button:disabled {
 
 .resultados pre {
     white-space: pre-wrap; /* Preserva saltos de línea y espacios */
-    font-family: monospace; /* Usa una fuente monoespaciada para mantener alineaciones */
+    font-family: monospace;
+    color: #cac7ff; /* Usa una fuente monoespaciada para mantener alineaciones */
 }
 
 .resultados {
@@ -137,9 +138,10 @@ button:disabled {
 
 .resultados h3 {
     margin: 0 0 15px;
-    color: #cac7ff;
+    color: #ffffff;
     font-size: 19px;
     font-weight: 600;
+    font-style: bold;
 }
 
 .resultados p {
