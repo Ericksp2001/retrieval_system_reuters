@@ -61,9 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 console.log(data);
                 if (selectedOption === 'tfidf-cosine') {
-                    mostrarResultados(data.cosine_similarities.map(subarray => subarray[0]));
+                    mostrarResultados(data.cosine_similarities.map(subarray => [subarray[0], subarray[2]]));
                 } else if (selectedOption === 'bow-jaccard') {
-                    mostrarResultados(data.jaccard_similarities.map(subarray => subarray[0]));
+                    mostrarResultados(data.jaccard_similarities.map(subarray => [subarray[0], subarray[2]]));
                 }
             })
             .catch(error => {
@@ -97,10 +97,27 @@ document.addEventListener('DOMContentLoaded', () => {
             resultadosDiv.appendChild(titleElement);
             
             const documentosElement = document.createElement('p');
-            documentosElement.textContent = resultados.map(item => `Documento ${item}`).join(', ');
+            resultados.forEach(item => {
+                const documento = document.createElement('div');
+                documento.classList.add('documento');
+
+                // Añadir un doble salto de línea entre documentos
+                documento.appendChild(document.createElement('br'));
+    
+                const titulo = document.createElement('p');
+                titulo.textContent = item[0];
+                documento.appendChild(titulo);
+    
+                const contenido = document.createElement('pre'); // Usar 'pre' para preservar espacios y saltos de línea
+                contenido.textContent = item[1];
+                documento.appendChild(contenido);
+    
+                documentosElement.appendChild(documento);
+            });
     
             resultadosDiv.appendChild(documentosElement);
             resultadosContainer.appendChild(resultadosDiv);
         }
-    }    
+    }
+    
 });

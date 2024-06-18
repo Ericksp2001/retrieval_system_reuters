@@ -27,7 +27,7 @@ matrix_path_tfidf = os.path.join(os.path.dirname(__file__), '../API_resources/tf
 stpw_path = os.path.join(os.path.dirname(__file__), '../reuters/stopwords.txt')
 
 # doc names
-doc_names_path = os.path.join(os.path.dirname(__file__), '../API_resources/document_names.joblib')
+docs_path = os.path.join(os.path.dirname(__file__), '../API_resources/documents.joblib')
 
 
 if os.path.exists(vectorizer_path_bow) and os.path.exists(matrix_path_bow) and os.path.exists(vectorizer_path_tfidf) and os.path.exists(matrix_path_tfidf):
@@ -35,7 +35,9 @@ if os.path.exists(vectorizer_path_bow) and os.path.exists(matrix_path_bow) and o
     bow_loaded = joblib.load(matrix_path_bow)
     vectorizer_tfidf = joblib.load(vectorizer_path_tfidf)
     tfidf_loaded = joblib.load(matrix_path_tfidf)
-    document_names = joblib.load(doc_names_path)
+    documents = joblib.load(docs_path)
+    document_names = list(documents.keys())
+    documents_contents = list(documents.values())
 else:
     raise FileNotFoundError("Vectorizer or matrix file not found in API_resources/bow or API_resources/tfidf")
 
@@ -48,7 +50,7 @@ corpus_list = [csr_matrix(doc) for doc in bow_loaded]
 def clean_text(*, text, stopwords):
     text = re.sub(r'\d+', '', text)
     tokens = text.lower().translate(str.maketrans('', '', string.punctuation)).split(" ")
-    stemmer = SnowballStemmer("spanish")
+    stemmer = SnowballStemmer("english")
     no_stw = [token for token in tokens if token not in stopwords]
     stemmed_tokens = [stemmer.stem(token) for token in no_stw]
     text_cleaned = " ".join(stemmed_tokens)
@@ -89,7 +91,8 @@ def process_query_tfidf():
     for index, similarity in enumerate(cosine_similarities):
         if similarity > umbral:
             doc_name = document_names[index]
-            non_zero_similarities.append((doc_name, float(similarity)))
+            doc_content = documents_contents[index]
+            non_zero_similarities.append((doc_name, float(similarity), doc_content))
 
     # Ordenar por similitud de mayor a menor
     non_zero_similarities.sort(key=lambda x: x[1], reverse=True)
@@ -112,12 +115,13 @@ def process_query_bow():
     
     jaccard_similarities = jaccard_similarity(query_vector, corpus_list).flatten()
     
-    umbral = 0.2
+    umbral = 0.010
     non_zero_similarities = []
     for index, similarity in enumerate(jaccard_similarities):
         if similarity > umbral:
             doc_name = document_names[index]  # Asumiendo que document_names está cargado
-            non_zero_similarities.append((doc_name, float(similarity)))  # Convertimos a float para serialización JSON
+            doc_content = documents_contents[index]
+            non_zero_similarities.append((doc_name, float(similarity), doc_content))  # Convertimos a float para serialización JSON
 
     # Ordenar por similitud de mayor a menor
     non_zero_similarities.sort(key=lambda x: x[1], reverse=True)
