@@ -82,7 +82,7 @@ def process_query_tfidf():
     
     cosine_similarities = cosine_similarity(query_vector, tfidf_loaded).flatten()
     
-    umbral = 0
+    umbral = 0.2
 
     non_zero_similarities = []
 
@@ -112,7 +112,7 @@ def process_query_bow():
     
     jaccard_similarities = jaccard_similarity(query_vector, corpus_list).flatten()
     
-    umbral = 0
+    umbral = 0.2
     non_zero_similarities = []
     for index, similarity in enumerate(jaccard_similarities):
         if similarity > umbral:
